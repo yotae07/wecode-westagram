@@ -1,0 +1,62 @@
+# settings.py
+
+LOGGING = {
+    'disable_existing_loggers': False,
+    'version': 1,
+    'formatters': {
+         'verbose': {
+            'format': '{asctime} {levelname} {message}',
+            'style': '{'
+        },
+    },
+    'handlers': {
+        'console': {
+            'class'     : 'logging.StreamHandler',
+            'formatter' : 'verbose',
+            'level'     : 'DEBUG',
+        },
+        'file': {
+            'level'     : 'DEBUG',
+            'class'     : 'logging.FileHandler',
+            'formatter' : 'verbose',
+            'filename'  : 'debug.log',
+        },
+    },
+    'loggers': {
+        'django.db.backends': {
+            'handlers' : ['console','file'],
+            'level'    : 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
+# views.py
+
+
+from django.db import connection, reset_queries
+import time
+
+def query_debugger(func):
+
+    @functools.wraps(func)
+    def inner_func(*args, **kwargs):
+
+        reset_queries()
+        
+        start_queries = len(connection.queries)
+
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        end = time.perf_counter()
+
+        end_queries = len(connection.queries)
+
+        print(f"Function : {func.__name__}")
+        print(f"Number of Queries : {end_queries - start_queries}")
+        print(f"Finished in : {(end - start):.2f}s")
+        return result
+
+    return inner_func
+
+@query_debugger
